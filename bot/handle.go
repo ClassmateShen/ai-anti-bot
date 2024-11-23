@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
-	"github.com/assimon/ai-anti-bot/database"
-	"github.com/golang-module/carbon/v2"
-	"github.com/spf13/viper"
-	tb "gopkg.in/telebot.v3"
 	"io"
 	"log"
 	"strconv"
 	"strings"
 	"time"
-	"errors"
+
+	"github.com/assimon/ai-anti-bot/database"
+	"github.com/golang-module/carbon/v2"
+	"github.com/spf13/viper"
+	tb "gopkg.in/telebot.v3"
 	"gorm.io/gorm"
 )
 
@@ -32,10 +33,17 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 	}
 	user, err = database.GetUserInfo(&first)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		OnChatMemberMessage(c)
-		return user, true, nil
-	}else if err != nil {
-		return
+		err = OnChatMemberMessage(c)
+		if err != nil {
+			return nil, false, err
+		}
+		user, err = database.GetUserInfo(&first)
+		if err != nil {
+			return nil, false, err
+		}
+		needCheck = true
+	} else if err != nil {
+		return nil, false, err
 	}
 	if user.VerificationTimes > viper.GetInt64("strategy.verification_times") {
 		return
