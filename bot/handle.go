@@ -44,7 +44,7 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 
 func OnTextMessage(c tb.Context) error {
 	user, needCheck, err := PreCheck(c)
-	if err == "record not found"{
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		defer func() {
 			_ = database.SaveUserInfo(user)
 		}()
