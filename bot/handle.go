@@ -11,11 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/assimon/ai-anti-bot/database"
-	"github.com/golang-module/carbon/v2"
-	"github.com/spf13/viper"
-	tb "gopkg.in/telebot.v3"
 	"gorm.io/gorm"
 )
 
@@ -32,18 +27,23 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 		TelegramChatId: c.Chat().ID,
 	}
 	user, err = database.GetUserInfo(&first)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = OnChatMemberMessage(c)
-		if err != nil {
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			newUser := &database.UserInfo{
+				TelegramUserId:    first.TelegramUserId,
+				TelegramChatId:    first.TelegramChatId,
+				JoinedTime:        carbon.Now().ToDateTimeStruct(),
+				NumberOfSpeeches:  0,
+				VerificationTimes: 0,
+			}
+			err = database.SaveUserInfo(newUser)
+			if err != nil {
+				return nil, false, err
+			}
+			user = newUser
+		} else {
 			return nil, false, err
 		}
-		user, err = database.GetUserInfo(&first)
-		if err != nil {
-			return nil, false, err
-		}
-		needCheck = true
-	} else if err != nil {
-		return nil, false, err
 	}
 	if user.VerificationTimes > viper.GetInt64("strategy.verification_times") {
 		return
@@ -54,7 +54,6 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 	}
 	return user, true, nil
 }
-
 func OnTextMessage(c tb.Context) error {
 	user, needCheck, err := PreCheck(c)
 	if err != nil {
