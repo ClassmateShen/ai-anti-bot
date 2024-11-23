@@ -62,10 +62,5 @@ func IncrementVerificationTimes(user *UserInfo) error {
 func GetUserInfo(user *UserInfo) (*UserInfo, error) {
 	var u UserInfo
 	err := Gdb.Where("telegram_user_id = ?", user.TelegramUserId).Where("telegram_chat_id = ?", user.TelegramChatId).First(&u).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		defer func() {
-			_ = database.SaveUserInfo(user)
-		}()
-	}
 	return &u, err
 }
