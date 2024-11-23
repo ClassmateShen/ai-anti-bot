@@ -31,7 +31,11 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 		TelegramChatId: c.Chat().ID,
 	}
 	user, err = database.GetUserInfo(&first)
-	if err != nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		defer func() {
+			_ = database.SaveUserInfo(user)
+		}()
+	}else if err != nil {
 		return
 	}
 	if user.VerificationTimes > viper.GetInt64("strategy.verification_times") {
@@ -46,11 +50,7 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 
 func OnTextMessage(c tb.Context) error {
 	user, needCheck, err := PreCheck(c)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		defer func() {
-			_ = database.SaveUserInfo(user)
-		}()
-	}else if err != nil {
+	if err != nil {
 		return err
 	}
 	if c.Sender().IsBot && viper.GetBool("clean_bot_message") {
