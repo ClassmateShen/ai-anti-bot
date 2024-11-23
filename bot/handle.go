@@ -44,7 +44,11 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 
 func OnTextMessage(c tb.Context) error {
 	user, needCheck, err := PreCheck(c)
-	if err != nil {
+	if err == "record not found"{
+		defer func() {
+			_ = database.SaveUserInfo(user)
+		}()
+	}else if err != nil {
 		return err
 	}
 	if c.Sender().IsBot && viper.GetBool("clean_bot_message") {
