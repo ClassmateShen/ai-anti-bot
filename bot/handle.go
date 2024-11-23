@@ -33,7 +33,14 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 	user, err = database.GetUserInfo(&first)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		defer func() {
-			_ = database.SaveUserInfo(user)
+			user := database.UserInfo{
+				TelegramUserId:    c.Sender().ID,
+				TelegramChatId:    c.Chat().ID,
+				JoinedTime:        carbon.Now().ToDateTimeStruct(),
+				NumberOfSpeeches:  0,
+				VerificationTimes: 0,
+			}
+			err := database.SaveUserInfo(&user)
 		}()
 		return user, true, nil
 	}else if err != nil {
