@@ -35,6 +35,7 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 		defer func() {
 			_ = database.SaveUserInfo(user)
 		}()
+		return user, true, nil
 	}else if err != nil {
 		return
 	}
