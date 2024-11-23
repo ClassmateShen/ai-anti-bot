@@ -41,6 +41,7 @@ func PreCheck(c tb.Context) (user *database.UserInfo, needCheck bool, err error)
 				VerificationTimes: 0,
 			}
 			err := database.SaveUserInfo(&user)
+			return err
 		}()
 		return user, true, nil
 	}else if err != nil {
